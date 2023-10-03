@@ -1,8 +1,8 @@
 const { userService } = require("../services");
-const { User } = require("../models");
 const moment = require("moment");
 const jwt = require("jsonwebtoken");
 const config = require("../config/config");
+const bcrypt = require("bcryptjs");
 
 /** Register/Create User controller */
 const createUser = async (req, res) => {
@@ -10,10 +10,14 @@ const createUser = async (req, res) => {
     const reqBody = req.body;
 
     let option = {
+      firstname: reqBody.firstname,
+      lastname: reqBody.lastname,
       email: reqBody.email,
       role: reqBody.role,
       exp: moment().add(1, "days").unix(),
     };
+
+    const hashPassword = await bcrypt.hash(reqBody.password, 8);
 
     const token = await jwt.sign(option, config.jwt.secret_key);
 
@@ -22,11 +26,12 @@ const createUser = async (req, res) => {
       lastname: reqBody.lastname,
       email: reqBody.email,
       role: reqBody.role,
-      password: User.hashPassword,
-      token: reqBody.token,
+      password: hashPassword,
+      token: token,
     };
 
     const userExist = await userService.createUser(filter);
+
     if (!userExist) {
       throw new Error("Something went wrong, please try again or later!");
     }
